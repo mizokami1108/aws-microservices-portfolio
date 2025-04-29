@@ -1,20 +1,23 @@
 #!/usr/bin/env node
-import * as cdk from 'aws-cdk-lib';
-import { AwsMicroservicesPortfolioStack } from '../lib/aws-microservices-portfolio-stack';
+import * as cdk from "aws-cdk-lib";
+import { AwsMicroservicesPortfolioStack } from "../lib/aws-microservices-portfolio-stack";
 
 const app = new cdk.App();
-new AwsMicroservicesPortfolioStack(app, 'AwsMicroservicesPortfolioStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
-
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
+new AwsMicroservicesPortfolioStack(app, "AwsMicroservicesPortfolioStack", {
+  /* 'env' を指定しない場合、このスタックは環境に依存しないスタックになります。
+   * アカウントやリージョンに依存する機能やコンテキストの参照は使えなくなりますが、
+   * 一度合成されたテンプレートをどの環境にもデプロイできるようになります。
+   */
+  /* 次の行のコメントを外すと、このスタックは現在の CLI 設定に基づく
+   * AWS アカウントとリージョンに特化したものになります。
+   */
   // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
-
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
+  /* 特定のアカウントとリージョンにこのスタックをデプロイしたい場合は、
+   * 次の行のコメントを外してください。
+   */
   // env: { account: '123456789012', region: 'us-east-1' },
-
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+  env: { region: "ap-northeast-1" }, // 東京リージョンを明示的に指定
+  /* 詳細は以下を参照してください:
+   * https://docs.aws.amazon.com/cdk/latest/guide/environments.html
+   */
 });
