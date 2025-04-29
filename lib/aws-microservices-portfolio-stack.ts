@@ -1,40 +1,36 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { VpcConstruct } from "./constructs/vpc";
+import { DatabaseConstruct } from "./constructs/database";
+import { EcsClusterConstruct } from "./constructs/ecs-cluster";
+import { UserServiceConstruct } from "./constructs/user-service";
+// import { ProductServiceConstruct } from "./constructs/product-service";
+// import { OrderServiceConstruct } from "./constructs/order-service";
 
 export class AwsMicroservicesPortfolioStack extends cdk.Stack {
-  public readonly vpc: ec2.Vpc;
-
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // VPCの作成
-    this.vpc = new ec2.Vpc(this, "MicroservicesVPC", {
-      cidr: "10.0.0.0/16",
-      maxAzs: 2, // 2つのアベイラビリティゾーンを使用
-      subnetConfiguration: [
-        // パブリックサブネット（インターネットゲートウェイ付き）
-        {
-          name: "Public",
-          subnetType: ec2.SubnetType.PUBLIC,
-          cidrMask: 24,
-        },
-        // プライベートサブネット（NATゲートウェイ付き）
-        {
-          name: "Private",
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          cidrMask: 24,
-        },
-      ],
-      // natGateways: 1, // コスト削減のため1つのNATゲートウェイを共有（本番環境では通常2つ）
-      natGateways: 0, // コスト削減のためNATゲートウェイを使用しない
+    // VPC
+    const vpcConstruct = new VpcConstruct(this, "VPC");
+
+    // データベース
+    const databaseConstruct = new DatabaseConstruct(this, "Database");
+
+    // ECSクラスター
+    const ecsClusterConstruct = new EcsClusterConstruct(this, "EcsCluster", {
+      vpc: vpcConstruct.vpc,
     });
 
-    // VPCの出力を設定（CloudFormationコンソールで確認用）
-    new cdk.CfnOutput(this, "VpcId", {
-      value: this.vpc.vpcId,
-      description: "VPC ID",
+    // ユーザーサービス
+    const userServiceConstruct = new UserServiceConstruct(this, "UserService", {
+      cluster: ecsClusterConstruct.cluster,
+      executionRole: ecsClusterConstruct.executionRole,
+      repository: ecsClusterConstruct.userServiceRepo,
+      userTable: databaseConstruct.userTable,
     });
+
+    // 商品サービス（実装は省略）
+    // 注文サービス（実装は省略）
   }
 }
