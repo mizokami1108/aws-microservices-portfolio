@@ -4,8 +4,9 @@ import { VpcConstruct } from "./constructs/vpc";
 import { DatabaseConstruct } from "./constructs/database";
 import { EcsClusterConstruct } from "./constructs/ecs-cluster";
 import { UserServiceConstruct } from "./constructs/user-service";
-// import { ProductServiceConstruct } from "./constructs/product-service";
-// import { OrderServiceConstruct } from "./constructs/order-service";
+import { ProductServiceConstruct } from "./constructs/product-service";
+import { OrderServiceConstruct } from "./constructs/order-service";
+import { ApiGatewayConstruct } from "./constructs/api-gateway";
 
 export class AwsMicroservicesPortfolioStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -28,9 +29,40 @@ export class AwsMicroservicesPortfolioStack extends cdk.Stack {
       executionRole: ecsClusterConstruct.executionRole,
       repository: ecsClusterConstruct.userServiceRepo,
       userTable: databaseConstruct.userTable,
+      vpc: vpcConstruct.vpc,
     });
 
-    // 商品サービス（実装は省略）
-    // 注文サービス（実装は省略）
+    // 商品サービス
+    const productServiceConstruct = new ProductServiceConstruct(
+      this,
+      "ProductService",
+      {
+        cluster: ecsClusterConstruct.cluster,
+        executionRole: ecsClusterConstruct.executionRole,
+        repository: ecsClusterConstruct.productServiceRepo,
+        productTable: databaseConstruct.productTable,
+        vpc: vpcConstruct.vpc,
+      }
+    );
+
+    // 注文サービス
+    const orderServiceConstruct = new OrderServiceConstruct(
+      this,
+      "OrderService",
+      {
+        cluster: ecsClusterConstruct.cluster,
+        executionRole: ecsClusterConstruct.executionRole,
+        repository: ecsClusterConstruct.orderServiceRepo,
+        orderTable: databaseConstruct.orderTable,
+        vpc: vpcConstruct.vpc,
+      }
+    );
+
+    // API Gateway
+    const apiGatewayConstruct = new ApiGatewayConstruct(this, "ApiGateway", {
+      userServiceALB: userServiceConstruct.loadBalancer,
+      productServiceALB: productServiceConstruct.loadBalancer,
+      orderServiceALB: orderServiceConstruct.loadBalancer,
+    });
   }
 }

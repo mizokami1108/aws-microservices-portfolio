@@ -28,3 +28,9 @@ yarn-error.log*
 # OS生成ファイル
 .DS_Store
 Thumbs.db
+
+# 現在のアクティブな設定ファイルは除外
+config/portfolio-config.json
+
+# プリセット設定ファイルはバージョン管理に含める
+!config/portfolio-config.*.json

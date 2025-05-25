@@ -3,30 +3,38 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { ConfigLoader } from "../utils/config-loader";
 
 export interface UserServiceConstructProps {
   cluster: ecs.Cluster;
   executionRole: iam.Role;
   repository: ecr.Repository;
   userTable: dynamodb.Table;
+  vpc: ec2.Vpc;
 }
 
 export class UserServiceConstruct extends Construct {
   public readonly service: ecs.FargateService;
+  public readonly loadBalancer: elbv2.ApplicationLoadBalancer;
 
   constructor(scope: Construct, id: string, props: UserServiceConstructProps) {
     super(scope, id);
 
+    // 設定ファイルから設定を読み込み
+    const serviceConfig = ConfigLoader.getServiceConfig("userService");
+
     // タスク定義
     const taskDefinition = new ecs.FargateTaskDefinition(this, "TaskDef", {
-      memoryLimitMiB: 512,
-      cpu: 256,
+      memoryLimitMiB: serviceConfig.memoryLimitMiB,
+      cpu: serviceConfig.cpu,
       executionRole: props.executionRole,
     });
 
     // タスク定義にコンテナを追加
     const container = taskDefinition.addContainer("Container", {
-      image: ecs.ContainerImage.fromRegistry("amazon/amazon-ecs-sample"), // 一時的なイメージ
+      image: ecs.ContainerImage.fromEcrRepository(props.repository),
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: "user-service" }),
       environment: {
         DDB_TABLE: props.userTable.tableName,
@@ -35,17 +43,77 @@ export class UserServiceConstruct extends Construct {
 
     container.addPortMappings({
       containerPort: 3000,
+      protocol: ecs.Protocol.TCP,
     });
+
+    // セキュリティグループの作成
+    const serviceSecurityGroup = new ec2.SecurityGroup(
+      this,
+      "ServiceSecurityGroup",
+      {
+        vpc: props.vpc,
+        description: "Security group for user service",
+        allowAllOutbound: true,
+      }
+    );
 
     // FargateサービスをECSクラスターに追加
     this.service = new ecs.FargateService(this, "Service", {
       cluster: props.cluster,
       taskDefinition,
-      desiredCount: 0, // コスト削減のため、初期値は0に設定
-      assignPublicIp: true, // パブリックサブネットでの実行に必要
+      desiredCount: serviceConfig.desiredCount, // 設定ファイルから読み込み
+      assignPublicIp: true,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PUBLIC,
+      },
+      securityGroups: [serviceSecurityGroup],
     });
+
+    // Application Load Balancerの作成
+    this.loadBalancer = new elbv2.ApplicationLoadBalancer(
+      this,
+      "LoadBalancer",
+      {
+        vpc: props.vpc,
+        internetFacing: true,
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+      }
+    );
+
+    // ターゲットグループの作成
+    const targetGroup = new elbv2.ApplicationTargetGroup(this, "TargetGroup", {
+      port: 3000,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      targetType: elbv2.TargetType.IP,
+      vpc: props.vpc,
+      healthCheck: { path: "/health" },
+    });
+
+    // ALBのリスナー設定
+    const listener = this.loadBalancer.addListener("Listener", {
+      port: 80,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      defaultTargetGroups: [targetGroup],
+    });
+
+    // Fargateサービスをターゲットグループにアタッチ
+    this.service.attachToApplicationTargetGroup(targetGroup);
+
+    // セキュリティグループの設定（ALBからのアクセスを許可）
+    serviceSecurityGroup.addIngressRule(
+      ec2.Peer.securityGroupId(
+        this.loadBalancer.connections.securityGroups[0].securityGroupId
+      ),
+      ec2.Port.tcp(3000),
+      "Allow access from ALB"
+    );
 
     // DynamoDBへのアクセス権限を付与
     props.userTable.grantReadWriteData(taskDefinition.taskRole);
+
+    // 設定の表示（デバッグ用）
+    console.log(`User Service - Desired Count: ${serviceConfig.desiredCount}`);
   }
 }

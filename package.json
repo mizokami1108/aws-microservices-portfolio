@@ -8,7 +8,12 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "config:dev": "node scripts/switch-config.js dev",
+    "config:demo": "node scripts/switch-config.js demo",
+    "deploy:dev": "npm run config:dev && cdk deploy",
+    "deploy:demo": "npm run config:demo && cdk deploy",
+    "destroy": "npm run config:dev && cdk destroy"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

@@ -1,0 +1,27 @@
+{
+  "environment": "demo",
+  "services": {
+    "userService": {
+      "desiredCount": 1,
+      "memoryLimitMiB": 512,
+      "cpu": 256
+    },
+    "productService": {
+      "desiredCount": 1,
+      "memoryLimitMiB": 512,
+      "cpu": 256
+    },
+    "orderService": {
+      "desiredCount": 1,
+      "memoryLimitMiB": 512,
+      "cpu": 256
+    }
+  },
+  "database": {
+    "billingMode": "PAY_PER_REQUEST"
+  },
+  "vpc": {
+    "maxAzs": 2,
+    "natGateways": 0
+  }
+}
