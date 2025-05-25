@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { PortfolioConfig } from "../types/portfolio-config";
+import { ServiceConfig } from "../types/portfolio-config";
 
 export class ConfigLoader {
   private static config: PortfolioConfig | null = null;
