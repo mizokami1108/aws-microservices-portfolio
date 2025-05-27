@@ -11,9 +11,17 @@
     "cdk": "cdk",
     "config:dev": "node scripts/switch-config.js dev",
     "config:demo": "node scripts/switch-config.js demo",
+    "ecr:clean": "pwsh ./scripts/cleanup-ecr.ps1",
+    "images:build": "pwsh ./scripts/build-and-push-images.ps1",
+    "deploy:complete": "pwsh ./scripts/deploy-complete.ps1",
+    "deploy:update": "npm run images:build && cdk deploy",
+    "deploy:reset": "npm run ecr:clean && cdk destroy && npm run deploy:complete",
+    "deploy:demo": "npm run config:demo && npm run deploy:complete",
     "deploy:dev": "npm run config:dev && cdk deploy",
-    "deploy:demo": "npm run config:demo && cdk deploy",
-    "destroy": "npm run config:dev && cdk destroy"
+    "check:stack": "aws cloudformation describe-stacks --stack-name AwsMicroservicesPortfolioStack --query 'Stacks[0].StackStatus'",
+    "check:ecs": "aws ecs describe-services --cluster MicroservicesCluster --services UserService ProductService OrderService --query 'services[*].[serviceName,status,runningCount,desiredCount]' --output table",
+    "check:ecr": "aws ecr describe-repositories --query 'repositories[*].[repositoryName,imageCount]' --output table",
+    "shutdown": "npm run config:dev && cdk deploy"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
