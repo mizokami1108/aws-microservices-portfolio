@@ -63,6 +63,7 @@ export class ProductServiceConstruct extends Construct {
 
     // FargateサービスをECSクラスターに追加
     this.service = new ecs.FargateService(this, "Service", {
+      serviceName: "ProductService",
       cluster: props.cluster,
       taskDefinition,
       desiredCount: serviceConfig.desiredCount,

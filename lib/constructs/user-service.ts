@@ -59,6 +59,7 @@ export class UserServiceConstruct extends Construct {
 
     // FargateサービスをECSクラスターに追加
     this.service = new ecs.FargateService(this, "Service", {
+      serviceName: "UserService",
       cluster: props.cluster,
       taskDefinition,
       desiredCount: serviceConfig.desiredCount, // 設定ファイルから読み込み

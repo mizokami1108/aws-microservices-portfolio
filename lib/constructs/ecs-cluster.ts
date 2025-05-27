@@ -21,8 +21,9 @@ export class EcsClusterConstruct extends Construct {
 
     // ECSクラスター
     this.cluster = new ecs.Cluster(this, "MicroservicesCluster", {
+      clusterName: "MicroservicesCluster",
       vpc: props.vpc,
-      containerInsights: false,
+      containerInsights: true,
     });
 
     // タスク実行ロール

@@ -59,6 +59,7 @@ export class OrderServiceConstruct extends Construct {
 
     // FargateサービスをECSクラスターに追加
     this.service = new ecs.FargateService(this, "Service", {
+      serviceName: "OrderService",
       cluster: props.cluster,
       taskDefinition,
       desiredCount: serviceConfig.desiredCount,
